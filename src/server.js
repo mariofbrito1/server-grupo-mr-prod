@@ -1,10 +1,8 @@
 const express = require('express');
-const nodemailer = require('nodemailer');
+//const nodemailer = require('nodemailer');
 const cors = require("cors");
 const multer = require('multer');
-const path = require('path');
-
- 
+const path = require('path'); 
 
 const { pool } = require('./dbHelper');
 
