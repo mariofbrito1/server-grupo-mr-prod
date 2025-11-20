@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const config = require('./../src/config'); 
+const config = require('../config'); 
 
 // Pool global compartido para toda la aplicación
 const pool = new Pool({
