@@ -2,73 +2,35 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require("cors");
 const multer = require('multer');
+const path = require('path');
 
-const { pool } = require('../database/dbHelper');
+// CORRECCIÓN: Rutas absolutas para producción
+const { pool } = require(path.join(__dirname, 'database', 'dbHelper'));
 
 const app = express();
-/*
-app.post("/send-email", (req, res) => {
 
-console.log("enviando mail");
+// Configuración para Railway
+const PORT = process.env.PORT || 7000;
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
-  /* var transporter = nodemailer.createTransport({
-       host: "smtp.ethereal.email",
-       port: 587,
-       secure: false,
-       
-       auth: {
-            user: "aaron77@ethereal.email" ,
-            pass: "5TxeMVw4pC6quKAkyR",
-       }
-   });*/
-/*
-   var transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        
-        auth: {
-            user: "mariofbrito@gmail.com" ,
-            pass: "oeijyvxcfyyxwzio",
-        }
-    });
-
-
-    //esto debe venir por el res
-    var mailOptions = {
-        from: "Remitente",
-        to: "mariofbrito@gmail.com",
-        subject: "ENviado desde nodemailer",
-        text: "HOla mundo "
-    }
-
-
-    transporter.sendMail(mailOptions, (error, info) => {
-        if(error) {
-            console.log("Error", error.message);
-
-            res.status(500).send(error.message)
-        } else {
-            console.log("message send oka");
-            res.status(200).jsonp(req.body);
-        }
-    });
-});
-*/
-
+// CORRECCIÓN: CORS para producción
 const corsOptions = {
-    origin: "*:*"
+    origin: process.env.NODE_ENV === 'production' 
+        ? ["https://*.railway.app", "https://*.up.railway.app", "*"] 
+        : "*",
+    credentials: true
 };
 
-// Servimos el contenido de la carpeta 'images' estaticamente
-app.use(express.static('images'));
+app.use(cors(corsOptions));
 
-// Configuracion de Multer
+// CORRECCIÓN: Servir archivos estáticos con path absoluto
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
-
+// Configuración de Multer - CORREGIDA para producción
 const fileStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'images');
+        // CORRECCIÓN: Usar path absoluto
+        cb(null, path.join(__dirname, 'images'));
     },
     filename: (req, file, cb) => {
         const uniquePrefix = Math.round(Math.random() * 1E9);
@@ -78,10 +40,8 @@ const fileStorage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
     if (file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg') {
-        // Acepta la imagen porque tiene extension .png, .jpg o .jpeg
         cb(null, true);
     } else {
-        // Rechaza la imagen
         cb(null, false);
     }
 }
@@ -89,112 +49,143 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage: fileStorage,
     limits: {
-      fileSize: 1024 * 1024 * 5
+        fileSize: 1024 * 1024 * 5
     },
     fileFilter: fileFilter
 });
 
 app.use(upload.single('imagen'));
 
-//module.exports = upload
-
-
-app.use(cors());
-
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('Error conectando a la base de datos:', err);
-  } else {
-    console.log('✅ Conectado a PostgreSQL correctamente');
-  }
-});
-
-// midleware
-app.use(express.urlencoded({ extended: true })); //extended para no recibir ninguna imagen
+// Middleware
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// CORRECCIÓN: Verificación de conexión a BD mejorada
+async function initializeDatabase() {
+    try {
+        await pool.query('SELECT NOW()');
+        console.log('✅ Conectado a PostgreSQL correctamente');
+    } catch (err) {
+        console.error('❌ Error conectando a la base de datos:', err);
+        // No salir del proceso, permitir que el servidor inicie igual
+    }
+}
 
-//  USUARIOS - CLIENTES - PERSONAL//
+initializeDatabase();
+
+// CORRECCIÓN: Rutas de health check y raíz
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        message: 'Maria del Rosario - Sol Bus API',
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/', (req, res) => {
+    res.json({ 
+        message: '🚌 Maria del Rosario - Sol Bus API',
+        environment: process.env.NODE_ENV,
+        status: 'running',
+        port: PORT
+    });
+});
+
 // =============================================
 // RUTAS ORGANIZADAS POR MÓDULOS
 // =============================================
 
-// 1. USUARIOS - CLIENTES - PERSONAL
-app.use(require('./routes/usuario.routes'));  
-app.use(require('./routes/roles.routes'));  
-app.use(require('./routes/categoria_usuario.routes'));
-app.use(require('./routes/usuario_rol.routes')); // NUEVA
-app.use(require('./routes/usuario_sucursal.routes')); // NUEVA
-app.use(require('./routes/usuario_unidad.routes')); // NUEVA
+// CORRECCIÓN: Todas las rutas con require corregidas
+try {
+    // 1. USUARIOS - CLIENTES - PERSONAL
+    app.use(require('./routes/usuario.routes'));  
+    app.use(require('./routes/roles.routes'));  
+    app.use(require('./routes/categoria_usuario.routes'));
+    app.use(require('./routes/usuario_rol.routes'));
+    app.use(require('./routes/usuario_sucursal.routes'));
+    app.use(require('./routes/usuario_unidad.routes'));
 
+    // 2. LOCALIZACIÓN ENTIDADES FÍSICAS
+    app.use(require('./routes/centro.routes'));
+    app.use(require('./routes/sucursal.routes'));  
+    app.use(require('./routes/sector.routes'));   
 
-// 2. LOCALIZACIÓN ENTIDADES FÍSICAS
-app.use(require('./routes/centro.routes'));
-app.use(require('./routes/sucursal.routes'));  
-app.use(require('./routes/sector.routes'));   
+    // 3. UNIDADES FÍSICAS - VEHÍCULOS
+    app.use(require('./routes/estado_vehiculo.routes'));
+    app.use(require('./routes/tipo_carroceria.routes'));
+    app.use(require('./routes/tipo_unidad.routes'));
+    app.use(require('./routes/unidad_vehiculo.routes'));
+    app.use(require('./routes/unidad_plan.routes'));
 
+    // 4. PRODUCTOS E INVENTARIO 
+    app.use(require('./routes/repuesto.routes'));  
 
-// 3. UNIDADES FÍSICAS - VEHÍCULOS
-app.use(require('./routes/estado_vehiculo.routes'));
-app.use(require('./routes/tipo_carroceria.routes'));
-app.use(require('./routes/tipo_unidad.routes'));
-app.use(require('./routes/unidad_vehiculo.routes')); // NUEVA
-app.use(require('./routes/unidad_plan.routes')); // NUEVA
+    // 5. ESTADOS GENERALES 
+    app.use(require('./routes/estado_neumatico.routes'));
+    app.use(require('./routes/estado_repuesto.routes'));
+    app.use(require('./routes/estado_tanque.routes'));
+    app.use(require('./routes/estado_movimiento_repuesto.routes'));
 
+    // 6. PROVEEDORES Y EQUIPOS EXTERNOS
+    app.use(require('./routes/proveedor.routes')); 
+    app.use(require('./routes/gps.routes')); 
+    app.use(require('./routes/expendedora_boletos.routes')); 
+    app.use(require('./routes/camara.routes')); 
+    app.use(require('./routes/poliza.routes'));
 
-// 4. PRODUCTOS E INVENTARIO 
-app.use(require('./routes/repuesto.routes'));  
+    // 7. NEUMÁTICOS
+    app.use(require('./routes/modelo_neumatico.routes'));
+    app.use(require('./routes/neumatico.routes'));
 
-// 5. ESTADOS GENERALES 
-app.use(require('./routes/estado_neumatico.routes'));
-app.use(require('./routes/estado_repuesto.routes'));
-app.use(require('./routes/estado_tanque.routes'));
-app.use(require('./routes/estado_movimiento_repuesto.routes'));
+    // 8. PLANES Y DOCUMENTACIÓN
+    app.use(require('./routes/plan.routes'));
+    app.use(require('./routes/carnet.routes'));
+    app.use(require('./routes/usuario_carnet.routes'));
+    app.use(require('./routes/tipo_carnet.routes'));
+    app.use(require('./routes/categoria.routes'));
+    app.use(require('./routes/tipo_plan.routes'));  
+    app.use(require('./routes/tarea_plan.routes')); 
 
+    // 9. TANQUES Y COMBUSTIBLE
+    app.use(require('./routes/tanque.routes')); 
 
-// 6. PROVEEDORES Y EQUIPOS EXTERNOS
-app.use(require('./routes/proveedor.routes')); 
-app.use(require('./routes/gps.routes')); 
-app.use(require('./routes/expendedora_boletos.routes')); 
-app.use(require('./routes/camara.routes.js')); 
-app.use(require('./routes/poliza.routes'));
+    // 10. DOCUMENTACIÓN Y CERTIFICACIONES
+    app.use(require('./routes/rto.routes'));  
 
+    // 11. TIPOS Y CATALOGOS
+    app.use(require('./routes/tipo_combustible.routes')); 
+    app.use(require('./routes/tipo_proveedor.routes')); 
+    app.use(require('./routes/tipo_rto.routes')); 
+    app.use(require('./routes/tipo_tanque.routes')); 
 
-// 7. NEUMÁTICOS
-app.use(require('./routes/modelo_neumatico.routes'));
-app.use(require('./routes/neumatico.routes'));
+    // 12. TAREAS Y ACTIVIDADES
+    app.use(require('./routes/tarea.routes')); 
 
+    // 13. TURNOS Y HORARIOS
+    app.use(require('./routes/turno.routes'));
 
-// 8. PLANES Y DOCUMENTACIÓN
-app.use(require('./routes/plan.routes'));
-app.use(require('./routes/carnet.routes'));
-app.use(require('./routes/usuario_carnet.routes'));
-app.use(require('./routes/tipo_carnet.routes'));
-app.use(require('./routes/categoria.routes'));
-app.use(require('./routes/tipo_plan.routes'));  
-app.use(require('./routes/tarea_plan.routes')); 
+    console.log('✅ Todas las rutas cargadas correctamente');
+} catch (error) {
+    console.error('❌ Error cargando rutas:', error.message);
+}
 
-// 9. TANQUES Y COMBUSTIBLE
-app.use(require('./routes/tanque.routes')); 
+// CORRECCIÓN: Manejo de errores global
+app.use((err, req, res, next) => {
+    console.error('Error global:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+});
 
-// 10. DOCUMENTACIÓN Y CERTIFICACIONES
-app.use(require('./routes/rto.routes'));  
+// CORRECCIÓN: Ruta 404
+app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Ruta no encontrada' });
+});
 
-// 11. TIPOS Y CATALOGOS
-app.use(require('./routes/tipo_carroceria.routes')); 
-app.use(require('./routes/tipo_combustible.routes')); 
-app.use(require('./routes/tipo_proveedor.routes')); 
-app.use(require('./routes/tipo_rto.routes')); 
-app.use(require('./routes/tipo_tanque.routes')); 
-app.use(require('./routes/tipo_unidad.routes')); 
-
-// 12. TAREAS Y ACTIVIDADES
-app.use(require('./routes/tarea.routes')); 
-
-// 13. TURNOS Y HORARIOS
-app.use(require('./routes/turno.routes'));  
-
-
-
-app.listen(7000);
-console.log('Maria del Roasario - Sol Bus Server Init --> port 7000');
+// CORRECCIÓN: Iniciar servidor
+app.listen(PORT, HOST, () => {
+    console.log('🚀 Maria del Rosario - Sol Bus Server iniciado');
+    console.log(`📍 Puerto: ${PORT}`);
+    console.log(`🌍 Host: ${HOST}`);
+    console.log(`🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📊 URL: http://${HOST}:${PORT}`);
+});
