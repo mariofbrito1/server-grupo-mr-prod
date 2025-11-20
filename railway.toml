@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm install && npm run build"
+
+[deploy]
+startCommand = "node dist/server.js"
+
+[build.environment]
+NODE_VERSION = "16.20.2"
