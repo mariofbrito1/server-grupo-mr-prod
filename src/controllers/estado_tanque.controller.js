@@ -1,4 +1,4 @@
-const { withConnection } = require('../../database/dbHelper'); // ✅ SOLO esto
+const { withConnection } = require('../dbHelper'); // ✅ SOLO esto
 
 const getList = async (req, res) => {
     await withConnection(async (client) => {

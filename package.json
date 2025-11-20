@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "nodemon --exec babel-node src/server.js",
-    "start": "node src/server.js",
+    "start": "node dist/server.js",
     "build": "babel src --out-dir dist --copy-files",
     "build:debug": "babel src --out-dir dist --copy-files && echo '✅ Build completado' && ls -la dist/",
     "serve": "node dist/server.js",

@@ -1,4 +1,4 @@
-const { withConnection } = require('../../database/dbHelper'); // ✅ SOLO esto
+const { withConnection } = require('../dbHelper'); 
 
 const getList = async (req, res) => {
     console.log("get sucursal usuario");

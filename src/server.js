@@ -4,8 +4,9 @@ const cors = require("cors");
 const multer = require('multer');
 const path = require('path');
 
-// CORRECCIÓN: Rutas absolutas para producción
-const { pool } = require(path.join(__dirname, 'database', 'dbHelper'));
+ 
+
+const { pool } = require('./dbHelper');
 
 const app = express();
 
@@ -71,9 +72,8 @@ async function initializeDatabase() {
     }
 }
 
-initializeDatabase();
-
-// CORRECCIÓN: Rutas de health check y raíz
+initializeDatabase(); 
+ 
 app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'OK', 

@@ -1,4 +1,4 @@
-const { withConnection } = require('../../database/dbHelper'); // ✅ AGREGA ESTA LÍNEA
+const { withConnection } = require('../dbHelper'); 
 const jwt = require('jsonwebtoken');
 const { generarJWT } = require('../helpers/jwt');
 

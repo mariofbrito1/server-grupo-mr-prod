@@ -1,4 +1,4 @@
-const { withConnection } = require('../../database/dbHelper'); // ✅ AGREGA ESTA LÍNEA
+const { withConnection } = require('../dbHelper');  
 
 const getList = async (req, res) => {
     await withConnection(async (client) => {

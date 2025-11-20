@@ -6,7 +6,7 @@ const withConnection = async (callback) => {
   try {
     return await callback(client);
   } finally {
-    client.release(); // SIEMPRE liberar la conexión
+    client.release(); 
   }
 };
 
