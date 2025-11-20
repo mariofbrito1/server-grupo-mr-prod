@@ -8,5 +8,8 @@
         }
       }
     ]
-  ]
+  ],
+  "copyFiles": true
 }
+
+ 

@@ -1,21 +1,24 @@
+ 
+// src/pool.js
 const { Pool } = require('pg');
-const config = require('./config'); 
 
-// Pool global compartido para toda la aplicación
 const pool = new Pool({
-  ...config,
-  max: 100,                         // Máximo de conexiones
-  idleTimeoutMillis: 30000,        // Cerrar conexiones inactivas después de 30s
-  connectionTimeoutMillis: 5000,   // Timeout para obtener conexión
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || '123456',
+  database: process.env.DB_NAME || 'db-grupomr',
+  port: process.env.DB_PORT || 5435,
+  ssl: process.env.NODE_ENV === 'production',
+  max: 100,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
-// Manejo de errores del pool
 pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
   process.exit(-1);
 });
 
 module.exports = pool;
-
 
 
