@@ -4,15 +4,14 @@
   "description": "",
   "main": "dist/server.js",
   "engines": {
-    "node": "16.16.0",
-    "npm": "8.11.0"
+    "node": ">=16.16.0",
+    "npm": ">=8.11.0"
   },
   "scripts": {
     "dev": "nodemon --exec babel-node src/server.js",
     "start": "node dist/server.js",
-    "build": "babel src --out-dir dist --copy-files --source-maps",
-    "build:debug": "babel src --out-dir dist --copy-files && echo '📁 Contenido de dist:' && ls -la dist/",
-    "build:test": "babel src --out-dir dist --copy-files && node dist/test-babel.js",
+    "build": "babel src --out-dir dist --copy-files",
+    "build:debug": "babel src --out-dir dist --copy-files && echo '✅ Build completado' && ls -la dist/",
     "serve": "node dist/server.js",
     "serve:simple": "node dist/server-simple.js",
     "serve:main": "node dist/server.js",
