@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const cors = require("cors");
 const multer = require('multer');
 
-const { pool } = require('./database/dbHelper');
+const { pool } = require('../database/dbHelper');
 
 const app = express();
 /*
